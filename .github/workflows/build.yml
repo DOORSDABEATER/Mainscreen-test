@@ -1,32 +1,26 @@
-
 name: Build DESECHO
 
 on:
-  workflow_dispatch:
   push:
-    paths:
-      - '**'
-      - '!*.jar'
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
+    name: Compile DESECHO Plugin
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Extract source ZIP
-        run: |
-          ZIP_FILE=$(find . -maxdepth 1 -name '*.zip' | head -n 1)
-          test -n "$ZIP_FILE" || {
-            echo "Source ZIP not found!"
-            exit 1
-          }
-          unzip -o "$ZIP_FILE" -d .
-
       - name: Set up Java 25
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '25'
@@ -34,21 +28,20 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '9.0.0'
-
-      - name: Fix Plasmo Voice API dependency
-        run: |
-          sed -i '/server-proxy-common/d' plugin/build.gradle.kts
-          sed -i '/server-common/d' plugin/build.gradle.kts
-          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice.api:server-proxy-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
+          gradle-version: '9.1.0'
 
       - name: Build DESECHO
-        run: gradle :plugin:shadowJar --no-daemon
+        run: gradle build --no-daemon
 
-      - name: Upload JAR
+      - name: Verify JAR exists
+        run: |
+          test -f plugin/build/libs/DESECHO.jar
+          ls -lh plugin/build/libs/DESECHO.jar
+
+      - name: Upload DESECHO JAR
         uses: actions/upload-artifact@v4
         with:
-          name: DESECHO
+          name: DESECHO-Plugin
           path: plugin/build/libs/DESECHO.jar
           if-no-files-found: error
-          
+          retention-days: 14
