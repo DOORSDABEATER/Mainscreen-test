@@ -19,7 +19,10 @@ jobs:
       - name: Extract source ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name '*.zip' | head -n 1)
-          test -n "$ZIP_FILE" || exit 1
+          test -n "$ZIP_FILE" || {
+            echo "Source ZIP not found!"
+            exit 1
+          }
           unzip -o "$ZIP_FILE" -d .
 
       - name: Set up Java 25
@@ -33,9 +36,10 @@ jobs:
         with:
           gradle-version: '9.0.0'
 
-      - name: Add missing Plasmo Voice API module
+      - name: Add Plasmo Voice server-common API
         run: |
-          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice.api:server-proxy-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
+          sed -i '/server-proxy-common/d' plugin/build.gradle.kts
+          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice.api:server-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
 
       - name: Build DESECHO
         run: gradle :plugin:shadowJar --no-daemon
