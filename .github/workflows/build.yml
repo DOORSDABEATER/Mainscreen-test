@@ -1,47 +1,63 @@
 name: Build DESECHO
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
-  workflow_dispatch:
+push:
+branches: [main, master]
+workflow_dispatch:
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
-  build:
-    name: Compile DESECHO Plugin
-    runs-on: ubuntu-latest
+build:
+name: Extract and Build DESECHO
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout source
-        uses: actions/checkout@v4
+steps:
+  - name: Checkout repository
+    uses: actions/checkout@v4
 
-      - name: Set up Java 25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '25'
+  - name: Install unzip
+    run: sudo apt-get update && sudo apt-get install -y unzip
 
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '9.1.0'
+  - name: Extract DESECHO source
+    run: |
+      mkdir -p source
+      unzip -q desecho-task4-reviewed.zip -d source
 
-      - name: Build DESECHO
-        run: gradle build --no-daemon
+      echo "Extracted project:"
+      find source -maxdepth 2 -type f | head -50
 
-      - name: Verify JAR exists
-        run: |
-          test -f plugin/build/libs/DESECHO.jar
-          ls -lh plugin/build/libs/DESECHO.jar
+  - name: Verify Gradle project
+    run: |
+      test -f source/settings.gradle.kts
+      test -f source/build.gradle.kts
+      test -f source/plugin/build.gradle.kts
+      echo "Gradle project found!"
 
-      - name: Upload DESECHO JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: DESECHO-Plugin
-          path: plugin/build/libs/DESECHO.jar
-          if-no-files-found: error
-          retention-days: 14
+  - name: Set up Java 25
+    uses: actions/setup-java@v4
+    with:
+      distribution: temurin
+      java-version: '25'
+
+  - name: Set up Gradle
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: '9.1.0'
+
+  - name: Build DESECHO
+    run: gradle -p source build --no-daemon
+
+  - name: Verify plugin JAR
+    run: |
+      ls -lh source/plugin/build/libs/
+      test -f source/plugin/build/libs/DESECHO.jar
+
+  - name: Upload DESECHO JAR
+    uses: actions/upload-artifact@v4
+    with:
+      name: DESECHO-Plugin
+      path: source/plugin/build/libs/DESECHO.jar
+      if-no-files-found: error
+      retention-days: 14
