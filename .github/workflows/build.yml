@@ -36,11 +36,11 @@ jobs:
         with:
           gradle-version: '9.0.0'
 
-      - name: Add correct Plasmo Voice API module
+      - name: Fix Plasmo Voice API dependency
         run: |
           sed -i '/server-proxy-common/d' plugin/build.gradle.kts
           sed -i '/server-common/d' plugin/build.gradle.kts
-          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice:server-proxy-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
+          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice.api:server-proxy-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
 
       - name: Build DESECHO
         run: gradle :plugin:shadowJar --no-daemon
@@ -51,4 +51,4 @@ jobs:
           name: DESECHO
           path: plugin/build/libs/DESECHO.jar
           if-no-files-found: error
-        
+          
