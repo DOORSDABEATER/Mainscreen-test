@@ -13,16 +13,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Extract source ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name '*.zip' | head -n 1)
-          if [ -z "$ZIP_FILE" ]; then
-            echo "Source ZIP not found!"
-            exit 1
-          fi
+          test -n "$ZIP_FILE" || exit 1
           unzip -o "$ZIP_FILE" -d .
 
       - name: Set up Java 25
@@ -36,10 +33,14 @@ jobs:
         with:
           gradle-version: '9.0.0'
 
-      - name: Compile and build DESECHO
+      - name: Add missing Plasmo Voice API module
+        run: |
+          sed -i '/compileOnly("su.plo.voice.api:server:/a\    compileOnly("su.plo.voice.api:server-proxy-common:$plasmoVoiceApiVersion")' plugin/build.gradle.kts
+
+      - name: Build DESECHO
         run: gradle :plugin:shadowJar --no-daemon
 
-      - name: Upload DESECHO JAR
+      - name: Upload JAR
         uses: actions/upload-artifact@v4
         with:
           name: DESECHO
